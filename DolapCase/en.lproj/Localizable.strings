@@ -1,0 +1,11 @@
+/* 
+  Localizable.strings
+  DolapCase
+
+  Created by Ali Furkan Budak on 8.04.2020.
+  Copyright © 2020 Ali Furkan Budak. All rights reserved.
+*/
+
+"okay" = "Okay";
+"error_loading_product_info" = "Error loading product info!";
+"comments" = "Comments";
