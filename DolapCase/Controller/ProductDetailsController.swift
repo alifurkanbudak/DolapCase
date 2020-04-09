@@ -38,15 +38,7 @@ class ProductDetailsController: UIViewController {
     let halfStar = UIImage(systemName: "star.lefthalf.fill")
     let fullStar = UIImage(systemName: "star.fill")
     
-    let COUNTER_CYCLE = 60
-    
-    var remainingTime = 0
-    
-    var product : Product?
-    var socials : ProductSocials?
-    
-    var socialInfoError = false
-    var productInfoError = false
+    var remainingTime : Int!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -68,7 +60,7 @@ class ProductDetailsController: UIViewController {
         getSocials()
         
         //Initialize periodic function calls with timer
-        remainingTime = COUNTER_CYCLE
+        remainingTime = Constants.counterCycle
         Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(updateCounter), userInfo: nil, repeats: true)
     }
     
@@ -76,56 +68,32 @@ class ProductDetailsController: UIViewController {
     // Fetches new social info. if the time has come
     @objc func updateCounter() {
         remainingTime -= 1
-        counterLabel.text = "\(remainingTime)"
-        counterView.updateCounterPercent(percentage: Double((COUNTER_CYCLE - remainingTime))/Double(COUNTER_CYCLE))
+        counterLabel.text = "\(remainingTime!)"
+        counterView.updateCounterPercent(percentage: Double((Constants.counterCycle - remainingTime))/Double(Constants.counterCycle))
         
         if remainingTime == 0 {
-            remainingTime += COUNTER_CYCLE
+            remainingTime += Constants.counterCycle
             getSocials()
         }
     }
     
     // Called every 60 seconds to read social info from Social.json
     func getSocials(){
-        let path = Bundle.main.path(forResource: "Social", ofType: "json")
-        
-        do {
-            let data = try Data(contentsOf: URL(fileURLWithPath: path!), options: .mappedIfSafe)
-            socials = try JSONDecoder().decode(ProductSocials.self, from: data)
-        } catch {
-            showInfoFetchError()
-            return
+        if let socials = ProductService.getSocials(VC: self) {
+            updateSocialView(socials: socials)
         }
-        
-        updateSocialView()
     }
     
     // Reads product info from Product.json
     func getProduct() {
-        let path = Bundle.main.path(forResource: "Product", ofType: "json")
-        
-        do {
-            let data = try Data(contentsOf: URL(fileURLWithPath: path!), options: .mappedIfSafe)
-            product =  try JSONDecoder().decode(Product.self, from: data)
-        }catch {
-            showInfoFetchError()
-            return
+        if let product = ProductService.getProduct(VC: self) {
+            updateProductView(product: product)
         }
-        
-        updateProductView()
-    }
-    
-    // Informs the user about the error
-    func showInfoFetchError() {
-        let alertController = UIAlertController(title: NSLocalizedString("error_loading_product_info", comment: ""), message:
-            nil, preferredStyle: .alert)
-        alertController.addAction(UIAlertAction(title: NSLocalizedString("okay", comment: ""), style: .cancel))
-        self.present(alertController, animated: true, completion: nil)
     }
     
     // Uses the product info to update relevant ui components
-    func updateProductView() {
-        let imageURL = URL(string: product!.image)!
+    func updateProductView(product: Product) {
+        let imageURL = URL(string: product.image)!
         
         // Display network image
         DispatchQueue.main.async {
@@ -134,19 +102,19 @@ class ProductDetailsController: UIViewController {
             self.productImage.image = image
         }
         
-        productTitle.text = product!.name
-        productDesc.text = product!.desc
-        productPrice.text = "\(product!.price.value) \(product!.price.currency)"
+        productTitle.text = product.name
+        productDesc.text = product.desc
+        productPrice.text = "\(product.price.value) \(product.price.currency)"
     }
     
     // Uses the social info to update relevant ui components
-    func updateSocialView() {
-        socialCommentRating.text = "\(socials!.commentCounts.averageRating)"
-        socialCommentCount.text = "(\(socials!.commentCounts.anonymousCommentsCount + socials!.commentCounts.memberCommentsCount) \(NSLocalizedString("comments", comment: "")))"
-        socialLikeLabel.text = "\(socials!.likeCount)"
+    func updateSocialView(socials: ProductSocials) {
+        socialCommentRating.text = "\(socials.commentCounts.averageRating)"
+        socialCommentCount.text = "(\(socials.commentCounts.anonymousCommentsCount + socials.commentCounts.memberCommentsCount) \(NSLocalizedString("comments", comment: "")))"
+        socialLikeLabel.text = "\(socials.likeCount)"
         
         // Set star images
-        var rating = socials!.commentCounts.averageRating
+        var rating = socials.commentCounts.averageRating
         for star in stars {
             switch rating {
             case ..<0.25:
